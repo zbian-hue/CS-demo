@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bulk Label Actions for Held Transactions</title>
+    <style>
+      :root {
+        --bg: #f6f7f8;
+        --panel: #ffffff;
+        --panel-2: #eef1f4;
+        --text: #222;
+        --muted: #5f6872;
+        --border: #c9ced4;
+        --blue: #2878b9;
+        --blue-dark: #1f639a;
+        --green: #078307;
+        --yellow: #fff200;
+        --selected: #eaf4ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 13px;
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 28px 24px 48px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 24px;
+      }
+
+      .lede {
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.45;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .stat {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        padding: 14px 16px;
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 22px;
+        margin-bottom: 4px;
+      }
+
+      .stat span {
+        color: var(--muted);
+      }
+
+      .callout {
+        background: #edf6ff;
+        border: 1px solid #b9d9f5;
+        margin-bottom: 18px;
+        padding: 14px 16px;
+        line-height: 1.45;
+      }
+
+      .callout strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .tool {
+        background: var(--panel);
+        border: 1px solid var(--border);
+      }
+
+      .tool-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel-2);
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .demo-pill {
+        background: #d7ebff;
+        border: 1px solid #a9cdeb;
+        border-radius: 999px;
+        color: #174f7d;
+        font-size: 11px;
+        padding: 3px 8px;
+        text-transform: none;
+      }
+
+      .tool-body {
+        padding: 16px;
+      }
+
+      .search-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 16px;
+        align-items: end;
+        margin-bottom: 12px;
+      }
+
+      label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+      }
+
+      input[type="text"],
+      select {
+        height: 26px;
+        border: 1px solid #9ca3aa;
+        background: #fff;
+        color: #222;
+        padding: 2px 6px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 3px;
+        background: var(--blue);
+        color: #fff;
+        cursor: pointer;
+        font-weight: 700;
+        height: 32px;
+        padding: 0 12px;
+      }
+
+      button:hover {
+        background: var(--blue-dark);
+      }
+
+      button.secondary {
+        background: #337fb9;
+      }
+
+      button.ghost {
+        background: transparent;
+        color: var(--blue);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      .actions {
+        align-items: center;
+        display: flex;
+        gap: 8px;
+        margin: 18px 0 12px;
+      }
+
+      .actions .held-count {
+        margin-left: auto;
+        background: #fff9c4;
+        border: 1px solid #e1d260;
+        padding: 4px 8px;
+      }
+
+      .label-panel {
+        background: #f9fbfc;
+        border: 1px solid var(--border);
+        display: none;
+        margin-bottom: 14px;
+        padding: 12px;
+      }
+
+      .label-panel.open {
+        display: block;
+      }
+
+      .label-panel-title {
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .label-panel-note {
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+
+      .label-controls {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--border);
+        padding: 8px;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      th {
+        background: var(--panel-2);
+        border-top: 1px solid var(--border);
+        font-weight: 700;
+      }
+
+      tr.selected {
+        background: var(--selected);
+      }
+
+      .member {
+        color: #1671b7;
+        font-weight: 700;
+      }
+
+      .amount {
+        color: var(--green);
+        font-weight: 700;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .status-held {
+        background: var(--yellow);
+        display: inline-block;
+        padding: 2px 5px;
+      }
+
+      .status-muted {
+        color: var(--muted);
+      }
+
+      .bulk-bar {
+        align-items: center;
+        background: #fff;
+        border: 1px solid var(--border);
+        bottom: 0;
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+        padding: 12px;
+        position: sticky;
+      }
+
+      .bulk-bar .note {
+        color: var(--muted);
+      }
+
+      .bulk-bar .spacer {
+        flex: 1;
+      }
+
+      .after-submit {
+        background: #fffdf0;
+        border: 1px solid #d9ca6a;
+        line-height: 1.45;
+        margin-top: 16px;
+        padding: 12px;
+      }
+
+      @media (max-width: 760px) {
+        .stats,
+        .search-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .bulk-bar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .bulk-bar .spacer {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Bulk Label Actions for Held Transactions</h1>
+      <p class="lede">
+        Select multiple held transactions, click Label Actions, choose the Compromised and Refund Status values once,
+        then click Submit to apply the same labels to all selected rows.
+      </p>
+
+      <section class="stats" aria-label="Selected transaction summary">
+        <div class="stat">
+          <strong id="held-count">3</strong>
+          <span>Held rows available</span>
+        </div>
+        <div class="stat">
+          <strong id="selected-count-stat">3</strong>
+          <span>Rows currently selected</span>
+        </div>
+        <div class="stat">
+          <strong id="selected-value">R$ 7,251,000</strong>
+          <span>Selected pending value</span>
+        </div>
+      </section>
+
+      <section class="callout">
+        <strong>Agent workflow</strong>
+        This keeps the current Label Actions and Submit flow, but lets agents apply the same labels to multiple held
+        transactions at once instead of updating each row individually.
+      </section>
+
+      <section class="tool">
+        <div class="tool-header">
+          <span>User/Group Transactions</span>
+          <span class="demo-pill">CS Demo</span>
+        </div>
+
+        <div class="tool-body">
+          <div class="search-grid">
+            <label>Group ID <input type="text" /></label>
+            <label>
+              Transaction
+              <select>
+                <option>Sale</option>
+              </select>
+            </label>
+            <button type="button">Search</button>
+          </div>
+
+          <div class="search-grid">
+            <label>User ID <input type="text" value="3528259564" /></label>
+            <label>
+              Transaction
+              <select>
+                <option>Group Payout</option>
+              </select>
+            </label>
+            <button type="button">Search</button>
+          </div>
+
+          <div class="actions">
+            <button id="label-actions" class="secondary" type="button">Label Actions</button>
+            <button id="submit-top" type="button">Submit</button>
+            <span class="held-count">3 held rows</span>
+          </div>
+
+          <section id="label-panel" class="label-panel" aria-live="polite">
+            <div class="label-panel-title">Label Actions for <span id="selected-count-panel">3</span> selected rows</div>
+            <div class="label-panel-note">
+              Choose labels once. They will appear on every selected row when the agent clicks Submit.
+            </div>
+            <div class="label-controls">
+              <label>
+                Compromised
+                <select id="compromised">
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </label>
+              <label>
+                Refund Status
+                <select id="refund-status">
+                  <option value="Yes">Yes</option>
+                  <option value="No, user claims cannot be verified">No, user claims cannot be verified</option>
+                  <option value="No, reported over 30 days ago">No, reported over 30 days ago</option>
+                  <option value="No, item could not be mined">No, item could not be mined</option>
+                  <option value="No, user is a bad actor">No, user is a bad actor</option>
+                  <option value="No, user was restored in past year">No, user was restored in past year</option>
+                  <option value="No, reason not listed">No, reason not listed</option>
+                </select>
+              </label>
+              <button id="hide-labels" class="ghost" type="button">Hide</button>
+            </div>
+          </section>
+
+          <table aria-label="Transaction table">
+            <thead>
+              <tr>
+                <th>
+                  <input id="select-all" type="checkbox" checked aria-label="Select all held transactions" />
+                </th>
+                <th>Date</th>
+                <th>Member</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Compromised</th>
+                <th>Refund Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="selected" data-amount="3625000">
+                <td><input class="row-check" type="checkbox" checked /></td>
+                <td>5/20/26 4:25 PM</td>
+                <td><span class="member">Indeed Careers</span></td>
+                <td>Group Revenue Share Payout</td>
+                <td class="amount">R$ 3,625,000</td>
+                <td><span class="status-held">Held</span></td>
+                <td class="compromised-cell"></td>
+                <td class="refund-cell"></td>
+              </tr>
+              <tr class="selected" data-amount="1000">
+                <td><input class="row-check" type="checkbox" checked /></td>
+                <td>5/19/26 6:29 PM</td>
+                <td><span class="member">Indeed Careers</span></td>
+                <td>Group Revenue Share Payout</td>
+                <td class="amount">R$ 1,000</td>
+                <td><span class="status-held">Held</span></td>
+                <td class="compromised-cell"></td>
+                <td class="refund-cell"></td>
+              </tr>
+              <tr class="selected" data-amount="3625000">
+                <td><input class="row-check" type="checkbox" checked /></td>
+                <td>5/19/26 3:06 PM</td>
+                <td><span class="member">Indeed Careers</span></td>
+                <td>Group Revenue Share Payout</td>
+                <td class="amount">R$ 3,625,000</td>
+                <td><span class="status-held">Held</span></td>
+                <td class="compromised-cell"></td>
+                <td class="refund-cell"></td>
+              </tr>
+              <tr data-amount="50000">
+                <td><input type="checkbox" disabled /></td>
+                <td>5/13/26 4:51 PM</td>
+                <td><span class="member">whthppnd2022</span></td>
+                <td>Group Revenue Share Payout</td>
+                <td class="amount">R$ 50,000</td>
+                <td><span class="status-muted">Cancelled</span></td>
+                <td>Yes</td>
+                <td>Yes</td>
+              </tr>
+              <tr data-amount="50000">
+                <td><input type="checkbox" disabled /></td>
+                <td>5/10/26 9:37 PM</td>
+                <td><span class="member">whthppnd2022</span></td>
+                <td>Group Revenue Share Payout</td>
+                <td class="amount">R$ 50,000</td>
+                <td><span class="status-muted">Released</span></td>
+                <td></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="bulk-bar">
+            <strong><span id="selected-count-bar">3</span> selected</strong>
+            <span class="note">Click Label Actions to set shared Compromised and Refund Status labels, then Submit.</span>
+            <span class="spacer"></span>
+            <button id="label-actions-bar" class="secondary" type="button">Label Actions</button>
+            <button id="submit-bar" type="button">Submit Selected Labels</button>
+            <button id="clear-selection" class="ghost" type="button">Clear</button>
+          </div>
+
+          <div id="after-submit" class="after-submit">
+            <strong>After Submit</strong>
+            <div id="submit-message">
+              Submit cancels the selected held transactions, returns value to the victim, and prevents recipient release.
+              Each selected transaction will show its own final result after processing.
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const labelPanel = document.querySelector("#label-panel");
+      const labelActions = document.querySelector("#label-actions");
+      const labelActionsBar = document.querySelector("#label-actions-bar");
+      const hideLabels = document.querySelector("#hide-labels");
+      const selectAll = document.querySelector("#select-all");
+      const rowChecks = Array.from(document.querySelectorAll(".row-check"));
+      const compromised = document.querySelector("#compromised");
+      const refundStatus = document.querySelector("#refund-status");
+      const clearSelection = document.querySelector("#clear-selection");
+      const selectedCountStat = document.querySelector("#selected-count-stat");
+      const selectedCountPanel = document.querySelector("#selected-count-panel");
+      const selectedCountBar = document.querySelector("#selected-count-bar");
+      const selectedValue = document.querySelector("#selected-value");
+      const submitMessage = document.querySelector("#submit-message");
+
+      function selectedRows() {
+        return rowChecks.filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.closest("tr"));
+      }
+
+      function formatRobux(value) {
+        return `R$ ${value.toLocaleString("en-US")}`;
+      }
+
+      function updateSelection() {
+        const rows = selectedRows();
+        const count = rows.length;
+        const value = rows.reduce((sum, row) => sum + Number(row.dataset.amount || "0"), 0);
+
+        selectedCountStat.textContent = count;
+        selectedCountPanel.textContent = count;
+        selectedCountBar.textContent = count;
+        selectedValue.textContent = formatRobux(value);
+        selectAll.checked = count === rowChecks.length;
+
+        rowChecks.forEach((checkbox) => {
+          checkbox.closest("tr").classList.toggle("selected", checkbox.checked);
+        });
+
+        const disabled = count === 0;
+        [labelActions, labelActionsBar, document.querySelector("#submit-top"), document.querySelector("#submit-bar")].forEach(
+          (button) => {
+            button.disabled = disabled;
+          },
+        );
+      }
+
+      function openLabels() {
+        if (selectedRows().length > 0) {
+          labelPanel.classList.add("open");
+        }
+      }
+
+      function applyLabelsToRows() {
+        selectedRows().forEach((row) => {
+          row.querySelector(".compromised-cell").textContent = compromised.value;
+          row.querySelector(".refund-cell").textContent = refundStatus.value;
+        });
+
+        if (compromised.value === "Yes" && refundStatus.value === "Yes") {
+          submitMessage.textContent =
+            "Submit cancels the selected held transactions, returns value to the victim, and prevents recipient release. Each selected transaction will show its own final result after processing.";
+        } else {
+          submitMessage.textContent =
+            "Submit lifts the administrative freeze for the selected rows, then each transaction follows its original hold timeline. Each selected transaction will show its own final result after processing.";
+        }
+      }
+
+      labelActions.addEventListener("click", openLabels);
+      labelActionsBar.addEventListener("click", openLabels);
+      hideLabels.addEventListener("click", () => labelPanel.classList.remove("open"));
+      document.querySelector("#submit-top").addEventListener("click", applyLabelsToRows);
+      document.querySelector("#submit-bar").addEventListener("click", applyLabelsToRows);
+
+      selectAll.addEventListener("change", () => {
+        rowChecks.forEach((checkbox) => {
+          checkbox.checked = selectAll.checked;
+        });
+        updateSelection();
+      });
+
+      rowChecks.forEach((checkbox) => checkbox.addEventListener("change", updateSelection));
+
+      compromised.addEventListener("change", () => {
+        refundStatus.value = compromised.value === "Yes" ? "Yes" : "No, user claims cannot be verified";
+      });
+
+      clearSelection.addEventListener("click", () => {
+        rowChecks.forEach((checkbox) => {
+          checkbox.checked = false;
+        });
+        labelPanel.classList.remove("open");
+        updateSelection();
+      });
+
+      updateSelection();
+    </script>
+  </body>
+</html>
